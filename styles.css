@@ -708,6 +708,6 @@ form .invalid { border-color: var(--red) !important; }
   font-weight: 700 !important;
   text-decoration: none;
 }
-.made-by img { width: auto; height: 30px; transition: opacity 0.15s; }
+.made-by img { width: auto; height: 30px; transform: translateY(4px); transition: opacity 0.15s; }
 .made-by:hover img { opacity: 0.8; }
 .login .made-by { margin-top: 24px; }

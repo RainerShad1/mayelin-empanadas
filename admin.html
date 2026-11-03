@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel · Mayelin Empanadas</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#4a2617">
+  <link rel="icon" href="assets/logo.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+  <!-- Inicio de sesión -->
+  <section id="login-view" class="login" hidden>
+    <img src="assets/logo.webp" alt="Mayelin Empanadas" width="120" height="120">
+    <h1>Panel del negocio</h1>
+    <form id="login-form" class="card">
+      <label>Correo
+        <input name="email" type="email" autocomplete="username" required>
+      </label>
+      <label>Contraseña
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <p id="login-error" class="error" role="alert" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <!-- Panel -->
+  <section id="app-view" hidden>
+    <header class="topbar">
+      <img src="assets/logo.webp" alt="" width="40" height="40">
+      <strong class="brand">Panel</strong>
+      <label class="switch" title="Si lo apagas, la página no acepta pedidos nuevos">
+        <input id="accepting" type="checkbox">
+        <span class="switch-track"></span>
+        <span id="accepting-label">Recibiendo pedidos</span>
+      </label>
+      <button id="logout" class="btn btn-secondary btn-small" type="button">Salir</button>
+    </header>
+
+    <nav class="admin-tabs" role="tablist">
+      <button type="button" role="tab" data-tab="active" aria-selected="true">Activos <span id="active-count" class="badge">0</span></button>
+      <button type="button" role="tab" data-tab="history" aria-selected="false">Historial</button>
+      <button type="button" role="tab" data-tab="menu" aria-selected="false">Menú</button>
+    </nav>
+
+    <main class="admin-main">
+      <div id="tab-active" class="tab-panel">
+        <div id="orders-active" class="orders"></div>
+      </div>
+
+      <div id="tab-history" class="tab-panel" hidden>
+        <div id="stats" class="stats"></div>
+        <div id="orders-history" class="orders"></div>
+      </div>
+
+      <div id="tab-menu" class="tab-panel" hidden>
+        <section class="card settings">
+          <h2>Ajustes</h2>
+          <div class="settings-row">
+            <label>Costo de envío
+              <input id="set-fee" type="number" min="0" step="1" inputmode="numeric">
+            </label>
+            <label>Pedido mínimo (empanadas)
+              <input id="set-min" type="number" min="0" step="1" inputmode="numeric">
+            </label>
+          </div>
+        </section>
+        <div id="products"></div>
+        <section class="card settings privacy-card">
+          <h2>Eliminar datos de un cliente</h2>
+          <p class="hint">Úsalo cuando un cliente lo pida. Borra su nombre, teléfono, dirección, ubicación, notas y mensajes, y deja los productos y totales para las ventas. <strong>No se puede deshacer.</strong> Los pedidos en curso no se tocan.</p>
+          <form id="delete-data-form">
+            <label>Teléfono del cliente
+              <input name="phone" type="tel" inputmode="tel" required>
+            </label>
+            <button class="btn btn-ghost" type="submit">Eliminar datos</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </section>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -28,8 +28,11 @@ window.CONFIG = {
 
   currency: "RD$",
 
-  // Texto junto al costo de envío en la página. Pon "" cuando termine la oferta.
-  deliveryNote: "oferta de apertura",
+  // Oferta del envío: se muestra como etiqueta junto al costo. Pon "" cuando termine la oferta.
+  deliveryNote: "Oferta de apertura",
+  // Precio normal del envío: si es mayor que el actual, aparece tachado junto a la oferta.
+  // Pon null cuando termine la oferta.
+  deliveryRegularFee: 100,
 
   // Horario por día (0 = domingo … 6 = sábado). null = cerrado ese día.
   hours: {

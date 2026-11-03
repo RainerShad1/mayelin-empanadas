@@ -98,6 +98,12 @@
     return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "a. m." : "p. m."}`;
   };
   const fmtRange = (h) => `${fmtTime(h[0])} a ${fmtTime(h[1])}`;
+  // Versión corta para la cabecera: "6:00 a 10:00 p. m." si las dos horas son de la tarde
+  const fmtRangeShort = (h) => {
+    const [a, b] = h.map(fmtTime);
+    const same = a.slice(-5) === b.slice(-5);
+    return same ? `${a.slice(0, -6)} a ${b}` : `${a} a ${b}`;
+  };
 
   function openStatus(now = new Date()) {
     if (settings && !settings.accepting_orders) {
@@ -134,14 +140,18 @@
     $("#closed-note").textContent = st.note || "";
 
     if (settings) {
-      const fee = settings.delivery_fee ? money(settings.delivery_fee) : "gratis";
-      $("#fact-delivery").textContent = `Envío ${fee}${C.deliveryNote ? ` (${C.deliveryNote})` : ""}`;
-      $("#fact-min").textContent = settings.min_order_units
-        ? `Mínimo ${settings.min_order_units} empanadas`
-        : "Sin pedido mínimo";
+      const fee = settings.delivery_fee;
+      const regular = Number(C.deliveryRegularFee) || 0;
+      // Durante la oferta se muestra el precio normal tachado al lado del precio de oferta
+      $("#fact-delivery").innerHTML = (regular > fee ? `<s>${money(regular)}</s> ` : "") +
+        (fee ? money(fee) : "Gratis");
+      const offer = $("#fact-offer");
+      offer.hidden = !C.deliveryNote;
+      offer.textContent = C.deliveryNote || "";
+      $("#fact-min").textContent = settings.min_order_units ? `${settings.min_order_units} empanadas` : "Sin mínimo";
     }
     const today = C.hours[new Date().getDay()];
-    $("#fact-hours").textContent = today ? `Hoy de ${fmtRange(today)}` : "Hoy cerrado";
+    $("#fact-hours").textContent = today ? fmtRangeShort(today) : "Cerrado";
 
     $("#owner").textContent = C.owner;
     const contact = C.contactWhatsapp || C.whatsapp;

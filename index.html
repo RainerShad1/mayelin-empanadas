@@ -47,10 +47,23 @@
       <p id="status" class="status" role="status"></p>
     </div>
     <ul class="perks">
-      <li><svg class="ico"><use href="#i-bike"/></svg><span id="fact-delivery">Envío a domicilio</span></li>
-      <li><svg class="ico"><use href="#i-bag"/></svg><span id="fact-min">Pedido mínimo</span></li>
-      <li><svg class="ico"><use href="#i-clock"/></svg><span id="fact-hours">Horario</span></li>
-      <li><svg class="ico"><use href="#i-cash"/></svg><span>Efectivo o transferencia</span></li>
+      <li class="perk perk-delivery">
+        <span class="perk-ico"><svg class="ico"><use href="#i-bike"/></svg></span>
+        <span class="perk-text"><small>Envío a domicilio</small><strong id="fact-delivery">…</strong></span>
+        <span id="fact-offer" class="offer" hidden></span>
+      </li>
+      <li class="perk">
+        <span class="perk-ico"><svg class="ico"><use href="#i-bag"/></svg></span>
+        <span class="perk-text"><small>Pedido mínimo</small><strong id="fact-min">…</strong></span>
+      </li>
+      <li class="perk">
+        <span class="perk-ico"><svg class="ico"><use href="#i-clock"/></svg></span>
+        <span class="perk-text"><small>Horario de hoy</small><strong id="fact-hours">…</strong></span>
+      </li>
+      <li class="perk">
+        <span class="perk-ico"><svg class="ico"><use href="#i-cash"/></svg></span>
+        <span class="perk-text"><small>Formas de pago</small><strong>Efectivo o transferencia</strong></span>
+      </li>
     </ul>
   </header>
 

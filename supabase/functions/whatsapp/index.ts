@@ -65,27 +65,43 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "cancelado",
 };
 
-const STATUS_MESSAGES: Record<string, (o: Order) => string> = {
-  confirmed: (o) => `✅ ¡Orden *#${o.code}* recibida y confirmada! Te iremos avisando por aquí el estado de tu pedido.` +
-    (o.payment === "Transferencia" ? `
+// Cada idea va en su párrafo (línea en blanco entre ellos) para que el mensaje se lea fácil en el celular
+const paragraphs = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join("\n\n");
 
-🏦 Pagas por transferencia (${money(o.total)}). En breve te enviaremos los datos de la cuenta. Prepararemos tu pedido cuando confirmemos el pago.` : ""),
-  payment_confirmed: (o) => `✅ ¡Recibimos tu transferencia del pedido *#${o.code}*! Gracias.`,
+const STATUS_MESSAGES: Record<string, (o: Order) => string> = {
+  confirmed: (o) => o.payment === "Transferencia"
+    ? paragraphs(
+      `✅ *¡Pedido #${o.code} confirmado!*`,
+      `🏦 Pagas por transferencia: *${money(o.total)}*`,
+      "En breve te enviamos los datos de la cuenta. Preparamos tu pedido cuando confirmemos el pago.",
+    )
+    : paragraphs(`✅ *¡Pedido #${o.code} confirmado!*`, "Te iremos avisando por aquí cada paso de tu pedido."),
+  payment_confirmed: (o) => paragraphs("✅ *¡Recibimos tu transferencia!*", `Pedido #${o.code}. ¡Gracias!`),
   // Al confirmar con el botón, un pedido en efectivo pasa directo a preparación: un solo mensaje lo dice todo
-  preparing: (o) => (o.payment === "Transferencia" && o.payment_confirmed ? `✅ ¡Recibimos tu transferencia!\n\n` : "") +
-    `✅ ¡Pedido *#${o.code}* confirmado! 👩‍🍳 Ya lo estamos preparando. Te avisamos por aquí cuando salga hacia tu casa.`,
-  on_the_way: (o) => `🛵 ¡Tu pedido *#${o.code}* está en camino!` +
-    (o.payment === "Efectivo" ? ` Ten listo el pago: ${money(o.total)} en efectivo.` : ""),
-  delivered: (o) => `🥟 ¡Pedido *#${o.code}* entregado! Gracias por elegir Mayelin Empanadas, ${firstName(o)}. ¡Buen provecho!`,
-  cancelled: (o) => `Tu pedido *#${o.code}* fue cancelado. Si tienes alguna duda, escríbenos por aquí.`,
+  preparing: (o) => paragraphs(
+    o.payment === "Transferencia" && o.payment_confirmed && "✅ *¡Recibimos tu transferencia!*",
+    `✅ *¡Pedido #${o.code} confirmado!*`,
+    "👩‍🍳 Ya lo estamos preparando.",
+    "Te avisamos por aquí cuando salga hacia tu casa.",
+  ),
+  on_the_way: (o) => paragraphs(
+    `🛵 *¡Tu pedido #${o.code} va en camino!*`,
+    o.payment === "Efectivo" && `💵 Ten listo el pago: *${money(o.total)}* en efectivo.`,
+  ),
+  delivered: (o) => paragraphs(
+    `🥟 *¡Pedido #${o.code} entregado!*`,
+    `Gracias por elegir Mayelin Empanadas, ${firstName(o)}.`,
+    "¡Buen provecho!",
+  ),
+  cancelled: (o) => paragraphs(`❌ *Pedido #${o.code} cancelado.*`, "Si tienes alguna duda, escríbenos por aquí."),
 };
 
 function confirmPrompt(o: Order) {
   const lines = o.items.map((i) => `• ${i.qty} x ${i.name}: ${money(i.total)}`);
-  let pay = `💵 ${o.payment}`;
+  let pay = `💵 Pago: ${o.payment}`;
   if (o.cash_with) pay += ` (pagas con ${money(o.cash_with)})`;
-  const head = `¡Hola ${firstName(o)}! 👋 Recibimos tu pedido *#${o.code}*:\n\n`;
-  const tail = `\n\nEnvío: ${money(o.delivery_fee)}\n*Total: ${money(o.total)}*\n${pay}\n📍 ${o.address}\n\n¿Confirmas tu pedido?`;
+  const head = `¡Hola ${firstName(o)}! 👋\n\nRecibimos tu pedido *#${o.code}*:\n\n`;
+  const tail = `\n\n🛵 Envío: ${money(o.delivery_fee)}\n💰 *Total: ${money(o.total)}*\n\n${pay}\n📍 ${o.address}\n\n*¿Confirmas tu pedido?*`;
   let body = lines.join("\n");
   // El cuerpo de un mensaje con botones admite como máximo 1024 caracteres
   const room = 1024 - head.length - tail.length;
@@ -94,14 +110,17 @@ function confirmPrompt(o: Order) {
 }
 
 function statusReply(o: Order) {
-  return `Tu pedido *#${o.code}* está ${STATUS_LABEL[o.status] ?? o.status}. ` +
-    (ACTIVE.includes(o.status) ? "Te avisaremos por aquí cuando cambie. Si necesitas algo, escríbenos y te responderemos pronto." : "");
+  return paragraphs(
+    `Tu pedido *#${o.code}* está *${STATUS_LABEL[o.status] ?? o.status}*.`,
+    ACTIVE.includes(o.status) && "Te avisamos por aquí cuando cambie. Si necesitas algo, escríbenos y te responderemos pronto.",
+  );
 }
 
-const notFoundReply = () =>
-  "¡Hola! 👋 Gracias por escribir a Mayelin Empanadas. " +
-  (SITE_URL ? `Para pedir, entra aquí: ${SITE_URL}` : "Para pedir, entra a nuestra página y envíanos el mensaje que se genera.") +
-  "\n\nSi ya hiciste un pedido, envíanos su código (por ejemplo: MAY-AB12C).";
+const notFoundReply = () => paragraphs(
+  "¡Hola! 👋 Gracias por escribir a *Mayelin Empanadas*.",
+  SITE_URL ? `🛒 Para pedir, entra aquí:\n${SITE_URL}` : "🛒 Para pedir, entra a nuestra página y envíanos el mensaje que se genera.",
+  "Si ya hiciste un pedido, envíanos su código (por ejemplo: MAY-AB12C).",
+);
 
 // ---------- Envío de mensajes ----------
 async function logMessage(row: Record<string, unknown>) {

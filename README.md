@@ -1,5 +1,7 @@
 # Mayelin Empanadas
 
+Hecho por [Mavuko Solutions](https://mavuko.vercel.app).
+
 Página de pedidos a domicilio para Mayelin Empanadas (La Romana, República Dominicana), con panel del negocio y bot de WhatsApp que confirma pedidos y avisa cada cambio de estado.
 
 ## Cómo funciona
@@ -33,3 +35,9 @@ npx vercel deploy . --prod
 ```
 
 Las migraciones se aplican en orden en el proyecto de Supabase y la función del bot se publica como `whatsapp` con verificación JWT desactivada (Meta firma sus llamadas con `WA_APP_SECRET`).
+
+## Autoría
+
+Diseñado y desarrollado por [Mavuko Solutions](https://mavuko.vercel.app) para Mayelin Empanadas.
+
+© 2026 Mavuko Solutions. Todos los derechos reservados. El código no puede copiarse, modificarse ni distribuirse sin permiso por escrito de Mavuko Solutions. La marca, el logo y el contenido de Mayelin Empanadas pertenecen a su dueña.

@@ -694,3 +694,19 @@ form .invalid { border-color: var(--red) !important; }
 .ios-install ol { margin: 0; padding-left: 20px; }
 .ios-install li { margin: 8px 0; }
 .ios-install .ico { width: 18px; height: 18px; vertical-align: -3px; color: #0a7aff; }
+
+/* ---------- Hecho por Mavuko ---------- */
+.made-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 6px 0;
+  color: var(--brown-2) !important;
+  font-size: 0.82rem;
+  font-weight: 700 !important;
+  text-decoration: none;
+}
+.made-by img { width: auto; height: 34px; transition: opacity 0.15s; }
+.made-by:hover img { opacity: 0.8; }
+.login .made-by { margin-top: 24px; justify-content: center; }

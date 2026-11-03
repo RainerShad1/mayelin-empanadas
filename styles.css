@@ -530,11 +530,11 @@ img { display: block; max-width: 100%; }
 .totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 14px 0 6px; color: var(--brown-2); }
 .totals dt { font-weight: 700; }
 .totals dd { margin: 0; text-align: right; font-weight: 800; color: var(--brown); font-variant-numeric: tabular-nums; }
-#clear-cart { margin-top: 10px; }
+
 
 /* ---------- Formulario ---------- */
-form label, label.notes { display: block; margin: 12px 0 0; font-weight: 800; font-size: 0.95rem; }
-form input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), form textarea, .notes textarea {
+form label { display: block; margin: 12px 0 0; font-weight: 800; font-size: 0.95rem; }
+form input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), form textarea, .notes-box {
   display: block;
   width: 100%;
   min-height: 48px;
@@ -546,8 +546,8 @@ form input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), form t
   font-weight: 400;
   font-size: 16px;
 }
-form textarea, .notes textarea { min-height: 0; resize: vertical; }
-form input:focus, form textarea:focus, .notes textarea:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(224, 118, 28, 0.22); }
+form textarea, .notes-box { min-height: 0; resize: vertical; }
+form input:focus, form textarea:focus, .notes-box:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(224, 118, 28, 0.22); }
 form .invalid { border-color: var(--red) !important; }
 .optional { font-weight: 600; color: var(--brown-2); }
 
@@ -573,7 +573,6 @@ form .invalid { border-color: var(--red) !important; }
 }
 .btn-locate:hover { background: #fff4e6; }
 .btn-locate .ico { color: var(--orange-dark); }
-.notes { margin-top: 16px; }
 
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .choice {
@@ -636,3 +635,21 @@ form .invalid { border-color: var(--red) !important; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---------- Paso "Tu pedido": cada parte en su bloque ---------- */
+.block {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.block-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1rem; font-weight: 900; }
+.block-head h3 .ico { color: var(--orange-dark); }
+.block-head .optional { font-size: 0.82rem; }
+.block .lines li:last-child { border-bottom: 0; padding-bottom: 4px; }
+.block .notes-box { margin-top: 8px; }
+.block-sum { background: var(--cream-2); border-color: transparent; }
+.block-sum .totals { margin: 6px 0 2px; }
+#step-cart > .warning { margin-top: 10px; }

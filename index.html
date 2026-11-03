@@ -126,57 +126,55 @@
             <dt>Envío</dt><dd id="t-fee"></dd>
           </dl>
           <p id="min-warning" class="warning" hidden></p>
+          <label class="notes">Notas para la cocina <span class="optional">(opcional)</span>
+            <textarea name="notes" form="order-form" rows="2" placeholder="Ej.: la docena mitad carne, mitad pollo; sin aceitunas"></textarea>
+          </label>
           <button id="clear-cart" class="link-btn" type="button">Vaciar pedido</button>
         </div>
 
-        <!-- Paso 2: entrega y pago -->
-        <form id="order-form" class="sheet-body" novalidate hidden>
-          <fieldset class="group">
-            <legend>Tus datos</legend>
-            <div class="row2">
-              <label>Nombre
-                <input name="name" autocomplete="name" required>
-              </label>
-              <label>Teléfono
-                <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required>
-              </label>
-            </div>
-          </fieldset>
-
-          <fieldset class="group">
-            <legend>Dirección de entrega</legend>
-            <p class="hint">Toca el mapa o arrastra el pin hasta la puerta de tu casa.</p>
-            <div class="map-wrap">
-              <div id="map" class="map" role="application" aria-label="Mapa para marcar tu ubicación"></div>
-              <button id="locate" class="locate-btn" type="button"><svg class="ico"><use href="#i-locate"/></svg>Usar mi ubicación</button>
-            </div>
+        <form id="order-form" novalidate>
+          <!-- Paso 2: dirección de entrega (solo el mapa, para que al desplazarse no se mueva el pin) -->
+          <div id="step-address" class="sheet-body" hidden>
+            <button id="locate" class="btn btn-locate btn-block" type="button"><svg class="ico"><use href="#i-locate"/></svg>Usar mi ubicación actual</button>
+            <p class="hint">O toca el mapa en la puerta de tu casa. Puedes arrastrar el pin para ajustarlo.</p>
+            <div id="map" class="map" role="application" aria-label="Mapa para marcar tu ubicación"></div>
             <p id="loc-status" class="hint" aria-live="polite"></p>
-            <label>Dirección
+            <label>Dirección <span class="optional">(se llena sola al marcar tu ubicación)</span>
               <input name="address" autocomplete="street-address" placeholder="Calle, número, sector" required>
             </label>
             <label>Referencia <span class="optional">(opcional)</span>
               <input name="reference" placeholder="Ej.: casa azul, portón negro, 2.º piso">
             </label>
-          </fieldset>
+          </div>
 
-          <fieldset class="group">
-            <legend>Pago</legend>
-            <div class="choices">
-              <label class="choice"><input type="radio" name="payment" value="Efectivo" checked><svg class="ico"><use href="#i-cash"/></svg>Efectivo</label>
-              <label class="choice"><input type="radio" name="payment" value="Transferencia"><svg class="ico"><use href="#i-bank"/></svg>Transferencia</label>
-            </div>
-            <label id="cash-field">¿Con cuánto pagas? <span class="optional">(para llevarte el cambio)</span>
-              <input name="cash" type="number" inputmode="numeric" min="0" step="1">
-            </label>
-            <p id="transfer-note" class="hint" hidden>Te enviaremos los datos de la cuenta por WhatsApp. Preparamos tu pedido cuando confirmemos la transferencia.</p>
-          </fieldset>
+          <!-- Paso 3: datos y pago -->
+          <div id="step-details" class="sheet-body" hidden>
+            <fieldset class="group">
+              <legend>Tus datos</legend>
+              <div class="row2">
+                <label>Nombre
+                  <input name="name" autocomplete="name" required>
+                </label>
+                <label>Teléfono
+                  <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required>
+                </label>
+              </div>
+            </fieldset>
 
-          <label>Notas para la cocina <span class="optional">(opcional)</span>
-            <textarea name="notes" rows="2" placeholder="Ej.: la docena mitad carne, mitad pollo"></textarea>
-          </label>
+            <fieldset class="group">
+              <legend>Pago</legend>
+              <div class="choices">
+                <label class="choice"><input type="radio" name="payment" value="Efectivo" checked><svg class="ico"><use href="#i-cash"/></svg>Efectivo</label>
+                <label class="choice"><input type="radio" name="payment" value="Transferencia"><svg class="ico"><use href="#i-bank"/></svg>Transferencia</label>
+              </div>
+              <label id="cash-field">¿Con cuánto pagas? <span class="optional">(para llevarte el cambio)</span>
+                <input name="cash" type="number" inputmode="numeric" min="0" step="1">
+              </label>
+              <p id="transfer-note" class="hint" hidden>Te enviaremos los datos de la cuenta por WhatsApp. Preparamos tu pedido cuando confirmemos la transferencia.</p>
+            </fieldset>
 
-          <p id="form-error" class="error" role="alert" hidden></p>
-          <p class="hint legal-hint">Al enviar el pedido aceptas las <a href="terminos.html" target="_blank" rel="noopener">condiciones del servicio</a> y la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
+            <p class="hint legal-hint">Al enviar el pedido aceptas las <a href="terminos.html" target="_blank" rel="noopener">condiciones del servicio</a> y la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
+          </div>
         </form>
 
         <!-- Pedido enviado -->
@@ -191,8 +189,9 @@
       </div>
 
       <footer id="sheet-foot" class="sheet-foot">
+        <p id="form-error" class="error" role="alert" hidden></p>
         <div class="foot-total"><span>Total con envío</span><strong id="t-total"></strong></div>
-        <button id="to-checkout" class="btn btn-primary btn-block" type="button">Continuar</button>
+        <button id="next" class="btn btn-primary btn-block" type="button">Continuar</button>
         <button id="send" class="btn btn-primary btn-block" type="submit" form="order-form" hidden><svg class="ico"><use href="#i-chat"/></svg>Enviar pedido por WhatsApp</button>
       </footer>
     </section>

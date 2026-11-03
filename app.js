@@ -294,24 +294,35 @@
     renderCart();
   });
 
-  // ---------- Hoja de pedido: paso 1 (pedido) y paso 2 (entrega y pago) ----------
+  // ---------- Hoja de pedido: 1 pedido, 2 dirección, 3 datos y pago ----------
+  // La dirección va sola en su paso: así, al desplazarse por el formulario, el dedo no arrastra el mapa.
   const sheet = $("#sheet");
+  const STEPS = [
+    { el: "#step-cart", title: "Tu pedido" },
+    { el: "#step-address", title: "Dirección de entrega" },
+    { el: "#step-details", title: "Tus datos y pago" },
+  ];
+  let step = 1;
   let lastFocus = null;
 
   function showStep(n) {
-    $("#step-cart").hidden = n !== 1;
-    $("#order-form").hidden = n !== 2;
+    step = n;
+    STEPS.forEach((s, i) => { $(s.el).hidden = i + 1 !== n; });
     $("#done").hidden = true;
     $("#sheet-foot").hidden = false;
-    $("#to-checkout").hidden = n !== 1;
-    $("#send").hidden = n !== 2;
-    $("#back").hidden = n !== 2;
-    $("#sheet-title").textContent = n === 1 ? "Tu pedido" : "Entrega y pago";
+    $("#form-error").hidden = true;
+    $("#next").hidden = n === STEPS.length;
+    $("#send").hidden = n !== STEPS.length;
+    $("#back").hidden = n === 1;
+    $("#sheet-title").textContent = STEPS[n - 1].title;
     $("#step-label").hidden = false;
-    $("#step-label").textContent = `Paso ${n} de 2`;
+    $("#step-label").textContent = `Paso ${n} de ${STEPS.length}`;
     $("#sheet-scroll").scrollTop = 0;
     if (n === 2) initMap();
   }
+
+  // Paso donde está un campo, para llevar al cliente ahí si falta algo
+  const stepOf = (el) => 1 + STEPS.findIndex((s) => $(s.el).contains(el));
 
   function openSheet() {
     lastFocus = document.activeElement;
@@ -326,26 +337,45 @@
     if (lastFocus) lastFocus.focus();
   }
   $("#cartbar").addEventListener("click", openSheet);
-  $("#back").addEventListener("click", () => showStep(1));
+  $("#back").addEventListener("click", () => showStep(step - 1));
   sheet.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeSheet(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !sheet.hidden) closeSheet(); });
 
-  $("#to-checkout").addEventListener("click", () => {
+  // Revisa el paso actual antes de pasar al siguiente
+  function checkCart() {
     const s = summary();
     const warn = $("#min-warning");
     const soldOut = s.lines.find((l) => !l.p.available);
-    if (!s.lines.length) return;
+    if (!s.lines.length) return false;
     if (soldOut) {
       warn.hidden = false;
       warn.textContent = `${soldOut.p.name} está agotado. Quítalo del pedido para continuar.`;
-      return;
+      return false;
     }
     if (settings && s.units < settings.min_order_units) {
       warn.hidden = false;
       warn.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
+      return false;
     }
-    showStep(2);
+    return true;
+  }
+
+  function checkAddress() {
+    if (!pin) return fail("Marca tu ubicación: toca «Usar mi ubicación actual» o toca el mapa.", $("#map"));
+    if (outOfZone()) return fail("Tu ubicación está fuera de nuestra zona de entrega.", $("#map"));
+    const address = form.elements.address;
+    if (address.value.trim().length < 3) {
+      if (geocoding) return fail("Estamos buscando tu dirección. Espera un segundo.");
+      // Si el mapa no dio una dirección, basta con el punto marcado: el delivery usa la ubicación
+      address.value = FALLBACK_ADDRESS;
+    }
+    return true;
+  }
+
+  $("#next").addEventListener("click", () => {
+    $("#form-error").hidden = true;
+    if (step === 1 && checkCart()) showStep(2);
+    else if (step === 2 && checkAddress()) showStep(3);
   });
 
   // ---------- Mapa y ubicación ----------
@@ -374,16 +404,58 @@
       marker.setLatLng([lat, lng]);
     }
     $("#map").classList.remove("invalid");
+    $("#form-error").hidden = true;
     const status = $("#loc-status");
     if (outOfZone()) {
       status.className = "hint bad";
       status.textContent = `Esta ubicación está fuera de nuestra zona de entrega (${C.store.deliveryRadiusKm} km).`;
-    } else {
-      status.className = "hint ok";
-      status.textContent = source === "gps"
-        ? "✓ Ubicación encontrada. Si no es exacta, arrastra el pin hasta tu puerta."
-        : "✓ Ubicación marcada.";
+      return;
     }
+    status.className = "hint ok";
+    status.textContent = source === "gps"
+      ? "✓ Ubicación encontrada. Si no es exacta, arrastra el pin hasta tu puerta."
+      : "✓ Ubicación marcada.";
+    fillAddress(lat, lng);
+  }
+
+  // ---------- Dirección automática ----------
+  // Convierte el punto del mapa en calle y sector con Nominatim (OpenStreetMap).
+  // Solo llena el campo si el cliente no escribió su propia dirección.
+  const FALLBACK_ADDRESS = "Punto marcado en el mapa";
+  let addressTyped = false;
+  let geocoding = false;
+  let geocodeTimer = null;
+  let geocodeSeq = 0;
+
+  function addressFrom(a) {
+    const street = [a.road || a.pedestrian || a.footway || a.path, a.house_number].filter(Boolean).join(" ");
+    const area = a.neighbourhood || a.suburb || a.quarter || a.residential || a.hamlet || a.village;
+    const city = a.city || a.town || a.municipality || a.county;
+    return [street, area, city].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(", ");
+  }
+
+  function fillAddress(lat, lng) {
+    const input = form.elements.address;
+    if (addressTyped && input.value.trim()) return;
+    clearTimeout(geocodeTimer);
+    const seq = ++geocodeSeq;
+    geocoding = true;
+    input.placeholder = "Buscando tu dirección…";
+    // Espera a que el cliente termine de mover el pin (el servicio pide máximo una consulta por segundo)
+    geocodeTimer = setTimeout(async () => {
+      let text = "";
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=es&lat=${lat}&lon=${lng}`;
+        const res = await fetch(url, { headers: { Accept: "application/json" } });
+        if (res.ok) text = addressFrom((await res.json()).address || {});
+      } catch { /* sin conexión al servicio: queda el punto del mapa */ }
+      if (seq !== geocodeSeq) return; // el cliente movió el pin otra vez
+      geocoding = false;
+      input.placeholder = "Calle, número, sector";
+      if (addressTyped && input.value.trim()) return;
+      input.value = text.length >= 3 ? text.slice(0, 200) : FALLBACK_ADDRESS;
+      input.classList.remove("invalid");
+    }, 700);
   }
 
   function initMap() {
@@ -433,6 +505,9 @@
   const form = $("#order-form");
   const saved = readStore(CUSTOMER_KEY, {});
   for (const k of ["name", "phone", "address", "reference"]) if (saved[k]) form.elements[k].value = saved[k];
+  // Una dirección escrita por el cliente no se reemplaza; una que llenó el mapa sí se actualiza
+  addressTyped = !!saved.address && !saved.addressAuto;
+  form.elements.address.addEventListener("input", (e) => { addressTyped = e.target.value.trim() !== ""; });
 
   function syncPayment() {
     $("#cash-field").hidden = form.elements.payment.value !== "Efectivo";
@@ -466,17 +541,19 @@
     return lines.join("\n");
   }
 
+  // Muestra el error junto al botón y lleva al cliente al paso y al campo que falta
   function fail(msg, field) {
     const el = $("#form-error");
-    el.textContent = msg;
-    el.hidden = false;
     if (field) {
+      const n = stepOf(field);
+      if (n && n !== step) showStep(n);
       field.classList.add("invalid");
       field.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (field.focus) field.focus({ preventScroll: true });
-    } else {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (field.focus && field.tagName !== "DIV") field.focus({ preventScroll: true });
     }
+    el.textContent = msg;
+    el.hidden = false;
+    return false;
   }
 
   form.addEventListener("input", (e) => e.target.classList.remove("invalid"));
@@ -485,20 +562,19 @@
     e.preventDefault();
     $("#form-error").hidden = true;
     const s = summary();
-    const data = Object.fromEntries(new FormData(form));
-    for (const k of Object.keys(data)) data[k] = String(data[k]).trim();
 
     if (!s.lines.length) return fail("Tu pedido está vacío.");
     const soldOut = s.lines.find((l) => !l.p.available);
     if (soldOut) return fail(`${soldOut.p.name} está agotado. Quítalo del pedido para continuar.`);
     if (s.units < settings.min_order_units) return fail(`El pedido mínimo es de ${settings.min_order_units} empanadas.`);
     const st = openStatus();
-    if (!settings.accepting_orders || (!st.open && !C.acceptOrdersWhenClosed)) return fail(st.text + ".");
+    if (!settings.accepting_orders || (!st.open && !C.acceptOrdersWhenClosed)) return fail(`${st.text}. ${st.note || ""}`.trim());
+    if (!checkAddress()) return;
+
+    const data = Object.fromEntries(new FormData(form));
+    for (const k of Object.keys(data)) data[k] = String(data[k]).trim();
     if (!data.name) return fail("Escribe tu nombre.", form.elements.name);
     if (data.phone.replace(/\D/g, "").length < 7) return fail("Escribe un teléfono válido.", form.elements.phone);
-    if (!pin) return fail("Marca tu ubicación en el mapa para que el delivery llegue a tu puerta.", $("#map"));
-    if (outOfZone()) return fail("Tu ubicación está fuera de nuestra zona de entrega.", $("#map"));
-    if (!data.address) return fail("Escribe tu dirección.", form.elements.address);
     if (data.payment === "Efectivo" && Number(data.cash) > 0 && Number(data.cash) < s.total) {
       return fail(`Con ${money(Number(data.cash))} no alcanza para el total de ${money(s.total)}.`, form.elements.cash);
     }
@@ -538,7 +614,9 @@
       sendBtn.innerHTML = sendLabel;
     }
 
-    writeStore(CUSTOMER_KEY, { name: data.name, phone: data.phone, address: data.address, reference: data.reference });
+    writeStore(CUSTOMER_KEY, {
+      name: data.name, phone: data.phone, address: data.address, reference: data.reference, addressAuto: !addressTyped,
+    });
 
     const url = `https://wa.me/${C.whatsapp}?text=${encodeURIComponent(buildMessage(order, data))}`;
     if (tab) tab.location.href = url;
@@ -553,8 +631,7 @@
 
     $("#done-code").textContent = "#" + order.code;
     $("#done-link").href = url;
-    $("#step-cart").hidden = true;
-    $("#order-form").hidden = true;
+    STEPS.forEach((s) => { $(s.el).hidden = true; });
     $("#sheet-foot").hidden = true;
     $("#back").hidden = true;
     $("#sheet-title").textContent = "Pedido enviado";

@@ -697,8 +697,9 @@ form .invalid { border-color: var(--red) !important; }
 
 /* ---------- Hecho por Mavuko ---------- */
 .made-by {
+  /* El logo de Mavuko tiene la línea base abajo: se alinea con la del texto */
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   margin-top: 16px;
   padding: 6px 0;
@@ -707,6 +708,6 @@ form .invalid { border-color: var(--red) !important; }
   font-weight: 700 !important;
   text-decoration: none;
 }
-.made-by img { width: auto; height: 34px; transition: opacity 0.15s; }
+.made-by img { width: auto; height: 30px; transition: opacity 0.15s; }
 .made-by:hover img { opacity: 0.8; }
-.login .made-by { margin-top: 24px; justify-content: center; }
+.login .made-by { margin-top: 24px; }

@@ -233,3 +233,7 @@ body.admin { padding-bottom: 32px; }
 /* ---------- Eliminar datos ---------- */
 .privacy-card { margin-top: 24px; }
 .privacy-card .hint { margin-bottom: 8px; }
+
+/* ---------- Mantener la sesión iniciada ---------- */
+.card label.recordar { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; font-weight: 700; cursor: pointer; }
+.card label.recordar input { display: inline-block; width: 22px; height: 22px; min-height: 0; margin: 0; accent-color: var(--orange-dark); flex: none; }

@@ -3,7 +3,29 @@
 
   const C = window.CONFIG;
   const $ = (sel, el = document) => el.querySelector(sel);
-  const db = window.supabase.createClient(C.supabase.url, C.supabase.key);
+  // "Mantener la sesión iniciada": con la casilla marcada la sesión se guarda en el navegador
+  // (sigue abierta al cerrar la pestaña); sin marcar, se borra al cerrar el navegador.
+  const RECORDAR_KEY = "mayelin-panel-recordar";
+  const recordar = () => {
+    try { return localStorage.getItem(RECORDAR_KEY) !== "no"; } catch { return true; }
+  };
+  const almacen = {
+    getItem: (k) => {
+      try { return (recordar() ? localStorage : sessionStorage).getItem(k); } catch { return null; }
+    },
+    setItem: (k, v) => {
+      try {
+        (recordar() ? localStorage : sessionStorage).setItem(k, v);
+        (recordar() ? sessionStorage : localStorage).removeItem(k);
+      } catch { /* sin almacenamiento */ }
+    },
+    removeItem: (k) => {
+      try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch { /* sin almacenamiento */ }
+    },
+  };
+  const db = window.supabase.createClient(C.supabase.url, C.supabase.key, {
+    auth: { storage: almacen, persistSession: true, autoRefreshToken: true },
+  });
 
   const STATUS = {
     pending: "Nuevo",
@@ -123,6 +145,8 @@
     err.hidden = true;
     const btn = f.querySelector("button");
     btn.disabled = true;
+    // La casilla decide dónde se guarda la sesión que se va a crear
+    try { localStorage.setItem(RECORDAR_KEY, f.elements.recordar.checked ? "si" : "no"); } catch { /* sin almacenamiento */ }
     const { data, error } = await db.auth.signInWithPassword({
       email: f.elements.email.value.trim(),
       password: f.elements.password.value,

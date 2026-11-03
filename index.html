@@ -2,47 +2,93 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Mayelin Empanadas · Pedidos a domicilio</title>
-  <meta name="description" content="Empanadas caseras a domicilio. Arma tu pedido, marca tu ubicación y envíalo por WhatsApp.">
-  <meta name="theme-color" content="#4a2617">
+  <meta name="description" content="Empanadas caseras a domicilio en La Romana. Arma tu pedido, marca tu ubicación y envíalo por WhatsApp.">
+  <meta name="theme-color" content="#3f1f12">
   <link rel="icon" href="assets/logo.webp">
   <meta property="og:title" content="Mayelin Empanadas">
   <meta property="og:description" content="El mejor sabor y mejor calidad. Hechas con amor, para ti.">
-  <meta property="og:image" content="assets/logo.webp">
+  <meta property="og:image" content="https://mayelin-empanadas.vercel.app/assets/logo.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <header class="hero">
-    <img class="logo" src="assets/logo.webp" alt="Mayelin Empanadas" width="180" height="180">
-    <div class="hero-text">
-      <h1>Mayelin Empanadas</h1>
-      <p class="tagline">Hechas con amor, para ti</p>
-      <p id="status" class="status"></p>
-      <ul class="facts">
-        <li id="fact-delivery"></li>
-        <li id="fact-min"></li>
-      </ul>
+<body class="shop">
+  <a class="skip" href="#menu">Saltar al menú</a>
+
+  <!-- Íconos (trazo de 2 px, estilo Lucide) -->
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 21h18M5 18v-7M9.5 18v-7M14.5 18v-7M19 18v-7M12 3l9 5H3z"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></symbol>
+    <symbol id="i-empanada" viewBox="0 0 64 40"><path d="M4 34a28 28 0 0 1 56 0z"/><path d="M9 33c1-2 3-2 4 0s3 2 4 0 3-2 4 0 3 2 4 0 3-2 4 0 3 2 4 0 3-2 4 0 3 2 4 0 3-2 4 0 3 2 4 0"/></symbol>
+  </svg>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <img class="masthead-logo" src="assets/logo.webp" alt="" width="72" height="72">
+      <div class="masthead-text">
+        <h1>Mayelin Empanadas</h1>
+        <p>Empanadas caseras a domicilio en La Romana</p>
+      </div>
+      <p id="status" class="status" role="status"></p>
     </div>
+    <ul class="perks">
+      <li><svg class="ico"><use href="#i-bike"/></svg><span id="fact-delivery">Envío a domicilio</span></li>
+      <li><svg class="ico"><use href="#i-bag"/></svg><span id="fact-min">Pedido mínimo</span></li>
+      <li><svg class="ico"><use href="#i-clock"/></svg><span id="fact-hours">Horario</span></li>
+      <li><svg class="ico"><use href="#i-cash"/></svg><span>Efectivo o transferencia</span></li>
+    </ul>
   </header>
 
-  <nav id="tabs" class="tabs" aria-label="Categorías"></nav>
+  <p id="closed-note" class="closed-note" hidden></p>
 
-  <main id="menu" class="menu"></main>
+  <ol class="how" aria-label="Cómo pedir">
+    <li><span class="how-n">1</span>Elige tus empanadas</li>
+    <li><span class="how-n">2</span>Marca dónde te las llevamos</li>
+    <li><span class="how-n">3</span>Envía el pedido por WhatsApp</li>
+  </ol>
+
+  <nav id="tabs" class="cats" aria-label="Categorías del menú"></nav>
+
+  <main id="menu" class="menu" tabindex="-1"></main>
 
   <footer class="footer">
-    <p><strong>Mayelin Empanadas</strong> · por <span id="owner"></span></p>
-    <p id="hours-list" class="hours-list"></p>
-    <p class="hours-list"><a href="terminos.html">Condiciones del servicio</a> · <a href="privacidad.html">Política de privacidad</a> · <a href="eliminar-datos.html">Eliminar mis datos</a></p>
+    <div class="footer-grid">
+      <section>
+        <h2>Horario</h2>
+        <dl id="hours-list" class="hours"></dl>
+      </section>
+      <section>
+        <h2>¿Dudas o reclamos?</h2>
+        <p>Escríbenos por WhatsApp<span id="contact"></span>.</p>
+        <p>Entregamos en La Romana, República Dominicana.</p>
+      </section>
+    </div>
+    <p class="footer-links">
+      <a href="terminos.html">Condiciones del servicio</a>
+      <a href="privacidad.html">Política de privacidad</a>
+      <a href="eliminar-datos.html">Eliminar mis datos</a>
+    </p>
+    <p class="footer-owner">Mayelin Empanadas, de <span id="owner"></span></p>
   </footer>
 
   <button id="cartbar" class="cartbar" type="button" hidden>
-    <span class="cartbar-count" id="cart-count">0</span>
-    <span>Ver mi pedido</span>
+    <span class="cartbar-count" id="cart-count" aria-live="polite">0</span>
+    <span class="cartbar-label">Ver mi pedido<small id="cart-hint"></small></span>
     <span class="cartbar-total" id="cart-total"></span>
   </button>
 
@@ -50,67 +96,92 @@
     <div class="sheet-backdrop" data-close></div>
     <section class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
       <header class="sheet-head">
-        <h2 id="sheet-title">Tu pedido</h2>
-        <button class="icon-btn" type="button" data-close aria-label="Cerrar">✕</button>
+        <button id="back" class="icon-btn" type="button" aria-label="Volver a tu pedido" hidden><svg class="ico"><use href="#i-back"/></svg></button>
+        <div class="sheet-title">
+          <h2 id="sheet-title">Tu pedido</h2>
+          <p id="step-label" class="steps">Paso 1 de 2</p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
       </header>
 
-      <div id="checkout" class="sheet-body">
-        <ul id="lines" class="lines"></ul>
-        <dl class="totals">
-          <dt>Subtotal</dt><dd id="t-sub"></dd>
-          <dt>Envío</dt><dd id="t-fee"></dd>
-          <dt class="grand">Total</dt><dd class="grand" id="t-total"></dd>
-        </dl>
-        <p id="min-warning" class="warning" hidden></p>
+      <div id="sheet-scroll" class="sheet-scroll">
+        <!-- Paso 1: revisar el pedido -->
+        <div id="step-cart" class="sheet-body">
+          <ul id="lines" class="lines"></ul>
+          <dl class="totals">
+            <dt>Subtotal</dt><dd id="t-sub"></dd>
+            <dt>Envío</dt><dd id="t-fee"></dd>
+          </dl>
+          <p id="min-warning" class="warning" hidden></p>
+          <button id="clear-cart" class="link-btn" type="button">Vaciar pedido</button>
+        </div>
 
-        <form id="order-form" novalidate>
-          <h3>Tus datos</h3>
-          <label>Nombre
-            <input name="name" autocomplete="name" required>
-          </label>
-          <label>Teléfono
-            <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required>
-          </label>
+        <!-- Paso 2: entrega y pago -->
+        <form id="order-form" class="sheet-body" novalidate hidden>
+          <fieldset class="group">
+            <legend>Tus datos</legend>
+            <div class="row2">
+              <label>Nombre
+                <input name="name" autocomplete="name" required>
+              </label>
+              <label>Teléfono
+                <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required>
+              </label>
+            </div>
+          </fieldset>
 
-          <h3>¿Dónde te lo llevamos?</h3>
-          <p class="hint">Toca el mapa o arrastra el pin hasta la puerta de tu casa.</p>
-          <button id="locate" class="btn btn-secondary" type="button">📍 Usar mi ubicación actual</button>
-          <div id="map" class="map" role="application" aria-label="Mapa para marcar tu ubicación"></div>
-          <p id="loc-status" class="hint"></p>
-          <label>Dirección
-            <input name="address" autocomplete="street-address" placeholder="Calle, número, sector" required>
-          </label>
-          <label>Referencia <span class="optional">(opcional)</span>
-            <input name="reference" placeholder="Ej.: casa azul, portón negro, 2.º piso">
-          </label>
+          <fieldset class="group">
+            <legend>Dirección de entrega</legend>
+            <p class="hint">Toca el mapa o arrastra el pin hasta la puerta de tu casa.</p>
+            <div class="map-wrap">
+              <div id="map" class="map" role="application" aria-label="Mapa para marcar tu ubicación"></div>
+              <button id="locate" class="locate-btn" type="button"><svg class="ico"><use href="#i-locate"/></svg>Usar mi ubicación</button>
+            </div>
+            <p id="loc-status" class="hint" aria-live="polite"></p>
+            <label>Dirección
+              <input name="address" autocomplete="street-address" placeholder="Calle, número, sector" required>
+            </label>
+            <label>Referencia <span class="optional">(opcional)</span>
+              <input name="reference" placeholder="Ej.: casa azul, portón negro, 2.º piso">
+            </label>
+          </fieldset>
 
-          <h3>Pago</h3>
-          <div class="choices">
-            <label class="choice"><input type="radio" name="payment" value="Efectivo" checked> Efectivo</label>
-            <label class="choice"><input type="radio" name="payment" value="Transferencia"> Transferencia</label>
-          </div>
-          <label id="cash-field">¿Con cuánto pagas? <span class="optional">(para llevarte el cambio)</span>
-            <input name="cash" type="number" inputmode="numeric" min="0" step="1">
-          </label>
-          <p id="transfer-note" class="hint" hidden>Te enviaremos los datos de la cuenta por WhatsApp. Confirmaremos tu transferencia manualmente antes de preparar el pedido.</p>
-          <label>Notas <span class="optional">(opcional)</span>
+          <fieldset class="group">
+            <legend>Pago</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="payment" value="Efectivo" checked><svg class="ico"><use href="#i-cash"/></svg>Efectivo</label>
+              <label class="choice"><input type="radio" name="payment" value="Transferencia"><svg class="ico"><use href="#i-bank"/></svg>Transferencia</label>
+            </div>
+            <label id="cash-field">¿Con cuánto pagas? <span class="optional">(para llevarte el cambio)</span>
+              <input name="cash" type="number" inputmode="numeric" min="0" step="1">
+            </label>
+            <p id="transfer-note" class="hint" hidden>Te enviaremos los datos de la cuenta por WhatsApp. Preparamos tu pedido cuando confirmemos la transferencia.</p>
+          </fieldset>
+
+          <label>Notas para la cocina <span class="optional">(opcional)</span>
             <textarea name="notes" rows="2" placeholder="Ej.: la docena mitad carne, mitad pollo"></textarea>
           </label>
 
           <p id="form-error" class="error" role="alert" hidden></p>
-          <button id="send" class="btn btn-primary btn-block" type="submit">Enviar pedido por WhatsApp</button>
-          <p class="hint center">Se abrirá WhatsApp con tu pedido listo. Solo tienes que tocar enviar. Al enviarlo aceptas las <a href="terminos.html" target="_blank" rel="noopener">condiciones del servicio</a> y la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
+          <p class="hint legal-hint">Al enviar el pedido aceptas las <a href="terminos.html" target="_blank" rel="noopener">condiciones del servicio</a> y la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
         </form>
+
+        <!-- Pedido enviado -->
+        <div id="done" class="sheet-body done" hidden>
+          <span class="done-icon"><svg class="ico"><use href="#i-check"/></svg></span>
+          <h3>¡Pedido listo!</h3>
+          <p>Tu número de pedido es <strong id="done-code"></strong>.</p>
+          <p>Envía el mensaje que se abrió en WhatsApp. Ahí te pedimos confirmarlo y te avisamos cuando salga hacia tu casa.</p>
+          <a id="done-link" class="btn btn-primary btn-block" target="_blank" rel="noopener"><svg class="ico"><use href="#i-chat"/></svg>Abrir WhatsApp otra vez</a>
+          <button class="btn btn-secondary btn-block" type="button" data-close>Volver al menú</button>
+        </div>
       </div>
 
-      <div id="done" class="sheet-body done" hidden>
-        <div class="done-icon">🎉</div>
-        <h3>¡Pedido listo!</h3>
-        <p>Tu número de pedido es <strong id="done-code"></strong>.</p>
-        <p>Envía el mensaje en WhatsApp para confirmarlo. Te avisaremos ahí el estado de tu pedido.</p>
-        <a id="done-link" class="btn btn-primary btn-block" target="_blank" rel="noopener">Abrir WhatsApp otra vez</a>
-        <button class="btn btn-secondary btn-block" type="button" data-close>Volver al menú</button>
-      </div>
+      <footer id="sheet-foot" class="sheet-foot">
+        <div class="foot-total"><span>Total con envío</span><strong id="t-total"></strong></div>
+        <button id="to-checkout" class="btn btn-primary btn-block" type="button">Continuar</button>
+        <button id="send" class="btn btn-primary btn-block" type="submit" form="order-form" hidden><svg class="ico"><use href="#i-chat"/></svg>Enviar pedido por WhatsApp</button>
+      </footer>
     </section>
   </div>
 

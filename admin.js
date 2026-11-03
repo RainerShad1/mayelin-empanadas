@@ -322,17 +322,26 @@
     saveSettings({ min_order_units: Math.max(0, parseInt(e.target.value, 10) || 0) }, "Pedido mínimo guardado."));
 
   // ---------- Menú ----------
+  let products = [];
+
   async function loadProducts() {
     const [{ data: cats }, { data: prods }] = await Promise.all([
       db.from("categories").select("*").order("position"),
       db.from("products").select("*").order("position"),
     ]);
+    products = prods || [];
     $("#products").innerHTML = (cats || []).map((c) => `
       <section class="products-cat">
         <h2>${esc(c.name)}</h2>
-        ${prods.filter((p) => p.category_id === c.id).map((p) => `
+        ${products.filter((p) => p.category_id === c.id).map((p) => `
           <div class="product-row">
-            <span class="name">${esc(p.name)}<small>${esc(p.description)}</small></span>
+            <label class="thumb${p.image_url ? "" : " is-empty"}" title="${p.image_url ? "Cambiar foto" : "Agregar foto"}">
+              ${p.image_url ? `<img src="${esc(p.image_url)}" alt="" width="64" height="64">` : `<span>Agregar foto</span>`}
+              <input type="file" accept="image/*" data-photo="${esc(p.id)}" aria-label="Foto de ${esc(p.name)}">
+            </label>
+            <span class="name">${esc(p.name)}<small>${esc(p.description)}</small>
+              ${p.image_url ? `<button class="link-btn" type="button" data-unphoto="${esc(p.id)}">Quitar foto</button>` : ""}
+            </span>
             <input type="number" min="0" step="1" value="${Number(p.price)}" data-price="${esc(p.id)}" aria-label="Precio de ${esc(p.name)}">
             <label class="switch" title="Disponible">
               <input type="checkbox" data-available="${esc(p.id)}" ${p.available ? "checked" : ""}>
@@ -342,8 +351,76 @@
       </section>`).join("");
   }
 
+  // ---------- Fotos de productos ----------
+  const PHOTO_BUCKET = "product-images";
+  const PHOTO_MAX_PX = 900;
+
+  // Achica la foto en el navegador: las del celular pesan varios MB y la página solo necesita unos 900 px
+  async function shrinkPhoto(file) {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, PHOTO_MAX_PX / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    if (bitmap.close) bitmap.close();
+    const toBlob = (type, q) => new Promise((r) => canvas.toBlob(r, type, q));
+    const webp = await toBlob("image/webp", 0.82);
+    // Safari viejo no genera WebP y devuelve PNG: en ese caso usamos JPEG
+    return webp && webp.type === "image/webp" ? webp : toBlob("image/jpeg", 0.85);
+  }
+
+  function photoPath(url) {
+    const marker = `/storage/v1/object/public/${PHOTO_BUCKET}/`;
+    const i = url ? url.indexOf(marker) : -1;
+    return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length));
+  }
+
+  async function savePhoto(input) {
+    const file = input.files[0];
+    const p = products.find((x) => x.id === input.dataset.photo);
+    if (!file || !p) return;
+    if (!file.type.startsWith("image/")) return toast("Elige una imagen (foto JPG, PNG o WebP).", true);
+    const thumb = input.closest(".thumb");
+    thumb.classList.add("is-busy");
+    try {
+      const blob = await shrinkPhoto(file);
+      const ext = blob.type === "image/webp" ? "webp" : "jpg";
+      const path = `${p.id}/${Date.now()}.${ext}`;
+      const up = await db.storage.from(PHOTO_BUCKET).upload(path, blob, { contentType: blob.type, cacheControl: "31536000" });
+      if (up.error) throw up.error;
+      const url = db.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+      const { error } = await db.from("products").update({ image_url: url }).eq("id", p.id);
+      if (error) {
+        await db.storage.from(PHOTO_BUCKET).remove([path]);
+        throw error;
+      }
+      const old = photoPath(p.image_url);
+      if (old) await db.storage.from(PHOTO_BUCKET).remove([old]);
+      toast(`Foto de ${p.name} guardada.`);
+    } catch {
+      toast("No se pudo guardar la foto. Prueba con otra imagen.", true);
+    }
+    loadProducts();
+  }
+
+  $("#products").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-unphoto]");
+    if (!btn) return;
+    const p = products.find((x) => x.id === btn.dataset.unphoto);
+    if (!p || !confirm(`¿Quitar la foto de ${p.name}?`)) return;
+    btn.disabled = true;
+    const { error } = await db.from("products").update({ image_url: null }).eq("id", p.id);
+    if (error) { btn.disabled = false; return toast("No se pudo quitar la foto.", true); }
+    const old = photoPath(p.image_url);
+    if (old) await db.storage.from(PHOTO_BUCKET).remove([old]);
+    toast(`Foto de ${p.name} quitada.`);
+    loadProducts();
+  });
+
   $("#products").addEventListener("change", async (e) => {
     const t = e.target;
+    if (t.dataset.photo) return savePhoto(t);
     let patch, id, okText;
     if (t.dataset.price) {
       id = t.dataset.price;

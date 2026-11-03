@@ -92,25 +92,37 @@
 
   // ---------- Horario ----------
   const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+  // "18:00" → "6:00 p. m.", como se dice la hora en República Dominicana
+  const fmtTime = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "a. m." : "p. m."}`;
+  };
+  const fmtRange = (h) => `${fmtTime(h[0])} a ${fmtTime(h[1])}`;
 
   function openStatus(now = new Date()) {
-    if (settings && !settings.accepting_orders) return { open: false, text: "No estamos recibiendo pedidos ahora" };
-    if (C.alwaysOpenForTesting) return { open: true, text: "Abierto" };
+    if (settings && !settings.accepting_orders) {
+      return { open: false, text: "Pausado", note: "En este momento no estamos recibiendo pedidos. Puedes ver el menú y volver más tarde." };
+    }
+    if (C.alwaysOpenForTesting) return { open: true, text: "Abierto ahora" };
     const day = now.getDay();
     const cur = now.getHours() * 60 + now.getMinutes();
     const today = C.hours[day];
     if (today && cur >= toMin(today[0]) && cur < toMin(today[1])) {
-      return { open: true, text: `Abierto · cierra a las ${today[1]}` };
+      return { open: true, text: `Abierto hasta las ${fmtTime(today[1])}` };
     }
     for (let i = 0; i < 7; i++) {
       const d = (day + i) % 7;
       const h = C.hours[d];
       if (!h || (i === 0 && cur >= toMin(h[0]))) continue;
       const when = i === 0 ? "hoy" : i === 1 ? "mañana" : `el ${DAYS[d]}`;
-      return { open: false, text: `Cerrado · abrimos ${when} a las ${h[0]}` };
+      return { open: false, text: "Cerrado", note: `Abrimos ${when} a las ${fmtTime(h[0])}. Puedes ir viendo el menú.` };
     }
-    return { open: false, text: "Cerrado por ahora" };
+    return { open: false, text: "Cerrado", note: "Por ahora no tenemos horario de atención." };
   }
+
+  // ---------- Íconos ----------
+  const icon = (name) => `<svg class="ico" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+  const placeholder = `<span class="ph" aria-hidden="true"><svg viewBox="0 0 64 40"><use href="#i-empanada"/></svg></span>`;
 
   // ---------- Render: cabecera y menú ----------
   function renderHeader() {
@@ -118,47 +130,74 @@
     const el = $("#status");
     el.textContent = st.text;
     el.className = "status " + (st.open ? "open" : "closed");
+    $("#closed-note").hidden = st.open || !st.note;
+    $("#closed-note").textContent = st.note || "";
+
     if (settings) {
-      $("#fact-delivery").textContent = `🛵 Envío ${settings.delivery_fee ? money(settings.delivery_fee) : "gratis"}${C.deliveryNote ? ` (${C.deliveryNote})` : ""}`;
-      $("#fact-min").textContent = `🥟 Pedido mínimo: ${settings.min_order_units} empanadas`;
+      const fee = settings.delivery_fee ? money(settings.delivery_fee) : "gratis";
+      $("#fact-delivery").textContent = `Envío ${fee}${C.deliveryNote ? ` (${C.deliveryNote})` : ""}`;
+      $("#fact-min").textContent = settings.min_order_units
+        ? `Mínimo ${settings.min_order_units} empanadas`
+        : "Sin pedido mínimo";
     }
+    const today = C.hours[new Date().getDay()];
+    $("#fact-hours").textContent = today ? `Hoy de ${fmtRange(today)}` : "Hoy cerrado";
+
     $("#owner").textContent = C.owner;
-    $("#hours-list").textContent = [1, 2, 3, 4, 5, 6, 0]
-      .map((d) => `${DAYS[d][0].toUpperCase() + DAYS[d].slice(1)}: ${C.hours[d] ? C.hours[d].join("–") : "cerrado"}`)
-      .join(" · ");
+    const contact = C.contactWhatsapp || C.whatsapp;
+    $("#contact").innerHTML = contact ? ` al <a href="https://wa.me/${esc(contact)}">+${esc(contact)}</a>` : "";
+
+    // Si todos los días tienen el mismo horario, se dice una sola vez
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    const same = order.every((d) => String(C.hours[d]) === String(C.hours[1]));
+    const rows = same
+      ? [["Todos los días", C.hours[1]]]
+      : order.map((d) => [DAYS[d][0].toUpperCase() + DAYS[d].slice(1), C.hours[d]]);
+    $("#hours-list").innerHTML = rows
+      .map(([label, h]) => `<dt>${label}</dt><dd>${h ? fmtRange(h) : "Cerrado"}</dd>`).join("");
   }
 
   function stepperHtml(id) {
-    if (!byId[id].available) return `<span class="soldout">Agotado</span>`;
+    const p = byId[id];
+    if (!p.available) return `<span class="soldout">Agotado</span>`;
     const qty = cart[id] || 0;
-    if (!qty) return `<button class="btn btn-primary btn-add" type="button" data-act="inc" data-id="${id}">Agregar</button>`;
+    const name = esc(p.name);
+    if (!qty) {
+      return `<button class="add-btn" type="button" data-act="inc" data-id="${esc(id)}" aria-label="Agregar ${name}">${icon("plus")}</button>`;
+    }
     return `<div class="stepper">
-      <button type="button" data-act="dec" data-id="${id}" aria-label="Quitar uno">−</button>
-      <span aria-live="polite">${qty}</span>
-      <button type="button" data-act="inc" data-id="${id}" aria-label="Agregar uno">+</button>
+      <button type="button" data-act="dec" data-id="${esc(id)}" aria-label="Quitar uno de ${name}">${icon("minus")}</button>
+      <span aria-label="${qty} en tu pedido">${qty}</span>
+      <button type="button" data-act="inc" data-id="${esc(id)}" aria-label="Agregar uno más de ${name}">${icon("plus")}</button>
     </div>`;
   }
 
   function renderMenu() {
-    $("#tabs").innerHTML = menu.map((c) => `<a href="#cat-${esc(c.id)}">${esc(c.name)}</a>`).join("");
+    $("#tabs").innerHTML = menu.map((c) => `<a href="#cat-${esc(c.id)}" data-cat="${esc(c.id)}">${esc(c.name)}</a>`).join("");
     $("#menu").innerHTML = menu.map((c) => `
-      <section class="cat" id="cat-${esc(c.id)}">
-        <h2>${esc(c.name)}</h2>
-        <div class="grid">
+      <section class="cat" id="cat-${esc(c.id)}" aria-labelledby="h-${esc(c.id)}">
+        <h2 id="h-${esc(c.id)}">${esc(c.name)}</h2>
+        <div class="cat-list">
           ${c.items.map((p) => `
             <article class="item${p.available ? "" : " is-soldout"}">
-              ${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.name)}" loading="lazy">` : ""}
-              <div class="item-body">
+              <div class="item-text">
                 <h3>${esc(p.name)}</h3>
-                <p>${esc(p.description || "")}</p>
-                <div class="item-foot">
+                ${p.description ? `<p>${esc(p.description)}</p>` : ""}
+                <div class="item-meta">
                   <span class="price">${money(p.price)}</span>
-                  <span class="slot" data-slot="${esc(p.id)}">${stepperHtml(p.id)}</span>
+                  ${p.units > 1 ? `<span class="units">${p.units} empanadas</span>` : ""}
                 </div>
+              </div>
+              <div class="item-media">
+                ${p.image_url
+                  ? `<img src="${esc(p.image_url)}" alt="${esc(p.name)}" width="104" height="104" loading="lazy" decoding="async">`
+                  : placeholder}
+                <span class="slot" data-slot="${esc(p.id)}">${stepperHtml(p.id)}</span>
               </div>
             </article>`).join("")}
         </div>
       </section>`).join("");
+    watchCategories();
   }
 
   function renderItem(id) {
@@ -166,35 +205,68 @@
     if (slot) slot.innerHTML = stepperHtml(id);
   }
 
+  // Marca en la barra la categoría que se está viendo
+  let catObserver = null;
+  function watchCategories() {
+    if (catObserver) catObserver.disconnect();
+    if (!("IntersectionObserver" in window)) return;
+    const nav = $("#tabs");
+    catObserver = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const id = e.target.id.slice(4);
+        nav.querySelectorAll("a").forEach((a) => {
+          const on = a.dataset.cat === id;
+          a.setAttribute("aria-current", on);
+          if (on) nav.scrollTo({ left: a.offsetLeft - 16, behavior: "smooth" });
+        });
+      }
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    document.querySelectorAll(".cat").forEach((s) => catObserver.observe(s));
+  }
+
   // ---------- Render: carrito ----------
+  let lastCount = 0;
+
   function renderCart() {
     const s = summary();
-    const bar = $("#cartbar");
-    bar.hidden = s.count === 0;
-    $("#cart-count").textContent = s.count;
+    const missing = settings ? Math.max(0, settings.min_order_units - s.units) : 0;
+
+    $("#cartbar").hidden = s.count === 0;
+    const countEl = $("#cart-count");
+    countEl.textContent = s.count;
+    if (s.count !== lastCount && s.count > 0) {
+      countEl.classList.remove("bump");
+      void countEl.offsetWidth; // reinicia la animación
+      countEl.classList.add("bump");
+    }
+    lastCount = s.count;
     $("#cart-total").textContent = money(s.subtotal);
+    $("#cart-hint").textContent = missing > 0
+      ? `${missing === 1 ? "Falta 1" : `Faltan ${missing}`} para el mínimo`
+      : `${s.count} ${s.count === 1 ? "producto" : "productos"}`;
 
     $("#lines").innerHTML = s.lines.length
       ? s.lines.map((l) => `
           <li>
             <span class="line-name">${esc(l.p.name)}<small>${l.p.available ? `${money(l.p.price)} c/u` : "Agotado: quítalo del pedido"}</small></span>
             <div class="stepper">
-              <button type="button" data-act="dec" data-id="${esc(l.p.id)}" aria-label="Quitar uno">−</button>
+              <button type="button" data-act="dec" data-id="${esc(l.p.id)}" aria-label="Quitar uno de ${esc(l.p.name)}">${icon("minus")}</button>
               <span>${l.qty}</span>
-              <button type="button" data-act="inc" data-id="${esc(l.p.id)}" aria-label="Agregar uno">+</button>
+              <button type="button" data-act="inc" data-id="${esc(l.p.id)}" aria-label="Agregar uno más de ${esc(l.p.name)}">${icon("plus")}</button>
             </div>
             <span class="line-price">${money(l.total)}</span>
           </li>`).join("")
-      : `<li class="empty">Tu pedido está vacío. ¡Agrega unas empanadas!</li>`;
+      : `<li class="empty">Tu pedido está vacío. Agrega empanadas desde el menú.</li>`;
+    $("#clear-cart").hidden = !s.lines.length;
 
     $("#t-sub").textContent = money(s.subtotal);
     $("#t-fee").textContent = s.fee ? money(s.fee) : "Gratis";
     $("#t-total").textContent = money(s.total);
 
     const warn = $("#min-warning");
-    const missing = settings ? settings.min_order_units - s.units : 0;
     warn.hidden = !(s.lines.length && missing > 0);
-    warn.textContent = `El pedido mínimo es de ${settings?.min_order_units} empanadas. Te faltan ${missing}.`;
+    warn.textContent = `El pedido mínimo es de ${settings?.min_order_units} empanadas. Te ${missing === 1 ? "falta 1" : `faltan ${missing}`}.`;
   }
 
   document.addEventListener("click", (e) => {
@@ -204,23 +276,67 @@
     setQty(id, (cart[id] || 0) + (btn.dataset.act === "inc" ? 1 : -1));
   });
 
-  // ---------- Hoja de pedido ----------
+  $("#clear-cart").addEventListener("click", () => {
+    if (!confirm("¿Quitar todos los productos de tu pedido?")) return;
+    for (const id of Object.keys(cart)) delete cart[id];
+    writeStore(CART_KEY, cart);
+    Object.keys(byId).forEach(renderItem);
+    renderCart();
+  });
+
+  // ---------- Hoja de pedido: paso 1 (pedido) y paso 2 (entrega y pago) ----------
   const sheet = $("#sheet");
+  let lastFocus = null;
+
+  function showStep(n) {
+    $("#step-cart").hidden = n !== 1;
+    $("#order-form").hidden = n !== 2;
+    $("#done").hidden = true;
+    $("#sheet-foot").hidden = false;
+    $("#to-checkout").hidden = n !== 1;
+    $("#send").hidden = n !== 2;
+    $("#back").hidden = n !== 2;
+    $("#sheet-title").textContent = n === 1 ? "Tu pedido" : "Entrega y pago";
+    $("#step-label").hidden = false;
+    $("#step-label").textContent = `Paso ${n} de 2`;
+    $("#sheet-scroll").scrollTop = 0;
+    if (n === 2) initMap();
+  }
 
   function openSheet() {
-    $("#checkout").hidden = false;
-    $("#done").hidden = true;
+    lastFocus = document.activeElement;
     sheet.hidden = false;
     document.body.style.overflow = "hidden";
-    initMap();
+    showStep(1);
+    $(".sheet-panel .icon-btn[data-close]").focus();
   }
   function closeSheet() {
     sheet.hidden = true;
     document.body.style.overflow = "";
+    if (lastFocus) lastFocus.focus();
   }
   $("#cartbar").addEventListener("click", openSheet);
+  $("#back").addEventListener("click", () => showStep(1));
   sheet.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeSheet(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !sheet.hidden) closeSheet(); });
+
+  $("#to-checkout").addEventListener("click", () => {
+    const s = summary();
+    const warn = $("#min-warning");
+    const soldOut = s.lines.find((l) => !l.p.available);
+    if (!s.lines.length) return;
+    if (soldOut) {
+      warn.hidden = false;
+      warn.textContent = `${soldOut.p.name} está agotado. Quítalo del pedido para continuar.`;
+      return;
+    }
+    if (settings && s.units < settings.min_order_units) {
+      warn.hidden = false;
+      warn.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    showStep(2);
+  });
 
   // ---------- Mapa y ubicación ----------
   let map = null;
@@ -383,6 +499,7 @@
     // Abrimos la pestaña ya, durante el toque del usuario, para que el navegador no la bloquee.
     const tab = window.open("", "_blank");
     const sendBtn = $("#send");
+    const sendLabel = sendBtn.innerHTML;
     sendBtn.disabled = true;
     sendBtn.textContent = "Guardando pedido…";
 
@@ -408,7 +525,7 @@
       return fail(orderErrorText(err.message));
     } finally {
       sendBtn.disabled = false;
-      sendBtn.textContent = "Enviar pedido por WhatsApp";
+      sendBtn.innerHTML = sendLabel;
     }
 
     writeStore(CUSTOMER_KEY, { name: data.name, phone: data.phone, address: data.address, reference: data.reference });
@@ -426,8 +543,14 @@
 
     $("#done-code").textContent = "#" + order.code;
     $("#done-link").href = url;
-    $("#checkout").hidden = true;
+    $("#step-cart").hidden = true;
+    $("#order-form").hidden = true;
+    $("#sheet-foot").hidden = true;
+    $("#back").hidden = true;
+    $("#sheet-title").textContent = "Pedido enviado";
+    $("#step-label").hidden = true;
     $("#done").hidden = false;
+    $("#sheet-scroll").scrollTop = 0;
   });
 
   // ---------- Inicio ----------

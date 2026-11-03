@@ -42,6 +42,7 @@ type Order = {
   phone: string;
   address: string;
   payment: string;
+  payment_confirmed: boolean;
   cash_with: number | null;
   items: { name: string; qty: number; total: number }[];
   delivery_fee: number;
@@ -70,7 +71,9 @@ const STATUS_MESSAGES: Record<string, (o: Order) => string> = {
 
 🏦 Pagas por transferencia (${money(o.total)}). En breve te enviaremos los datos de la cuenta. Prepararemos tu pedido cuando confirmemos el pago.` : ""),
   payment_confirmed: (o) => `✅ ¡Recibimos tu transferencia del pedido *#${o.code}*! Gracias.`,
-  preparing: (o) => `👩‍🍳 ¡Estamos preparando tu pedido *#${o.code}*!`,
+  // Al confirmar con el botón, un pedido en efectivo pasa directo a preparación: un solo mensaje lo dice todo
+  preparing: (o) => (o.payment === "Transferencia" && o.payment_confirmed ? `✅ ¡Recibimos tu transferencia!\n\n` : "") +
+    `✅ ¡Pedido *#${o.code}* confirmado! 👩‍🍳 Ya lo estamos preparando. Te avisamos por aquí cuando salga hacia tu casa.`,
   on_the_way: (o) => `🛵 ¡Tu pedido *#${o.code}* está en camino!` +
     (o.payment === "Efectivo" ? ` Ten listo el pago: ${money(o.total)} en efectivo.` : ""),
   delivered: (o) => `🥟 ¡Pedido *#${o.code}* entregado! Gracias por elegir Mayelin Empanadas, ${firstName(o)}. ¡Buen provecho!`,
@@ -206,8 +209,11 @@ async function handleButton(from: string, buttonId: string) {
   if (!order || order.wa_id !== from) return send(from, text(notFoundReply()), null, "not_found");
   if (order.status !== "pending") return send(from, text(statusReply(order)), order.id, "status_reply");
 
-  // El cambio de estado dispara el aviso (confirmado o cancelado) desde la base de datos
-  const status = action === "confirm" ? "confirmed" : action === "cancel" ? "cancelled" : null;
+  // El cambio de estado dispara el aviso desde la base de datos.
+  // Efectivo: confirmar lo pone en preparación. Transferencia: queda confirmado hasta que el
+  // negocio confirme el pago en el panel, y ahí pasa a preparación.
+  const confirmed = order.payment === "Transferencia" ? "confirmed" : "preparing";
+  const status = action === "confirm" ? confirmed : action === "cancel" ? "cancelled" : null;
   if (!status) return;
   const { error } = await db.from("orders").update({ status }).eq("id", order.id).eq("status", "pending");
   if (error) console.error("orders update", error);

@@ -640,6 +640,41 @@
     $("#sheet-scroll").scrollTop = 0;
   });
 
+  // ---------- Instalar como app ----------
+  // Android y computadoras: el navegador avisa que se puede instalar y el botón abre su ventana.
+  // iPhone: Safari no tiene esa ventana, así que el botón explica cómo agregarla a la pantalla de inicio.
+  const installBtn = $("#install");
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let installPrompt = null;
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => { /* sin instalación, la página funciona igual */ });
+  }
+  if (!standalone && isIOS) installBtn.hidden = false;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    if (!standalone) installBtn.hidden = false;
+  });
+  window.addEventListener("appinstalled", () => {
+    installPrompt = null;
+    installBtn.hidden = true;
+  });
+  installBtn.addEventListener("click", async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      // El aviso solo se puede usar una vez; si el navegador lo vuelve a ofrecer, el botón reaparece
+      installPrompt = null;
+      installBtn.hidden = true;
+    } else if (isIOS) {
+      $("#ios-install").showModal();
+    }
+  });
+
   // ---------- Inicio ----------
   renderHeader();
   $("#menu").innerHTML = `<p class="loading">Cargando menú…</p>`;

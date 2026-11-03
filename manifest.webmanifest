@@ -1,0 +1,16 @@
+{
+  "name": "Mayelin Empanadas",
+  "short_name": "Mayelin",
+  "description": "Empanadas caseras a domicilio en La Romana. Pide y recibe los avisos por WhatsApp.",
+  "lang": "es-DO",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf3e6",
+  "theme_color": "#3f1f12",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

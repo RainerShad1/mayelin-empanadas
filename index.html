@@ -7,6 +7,9 @@
   <meta name="description" content="Empanadas caseras a domicilio en La Romana. Arma tu pedido, marca tu ubicación y envíalo por WhatsApp.">
   <meta name="theme-color" content="#3f1f12">
   <link rel="icon" href="assets/logo.webp">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Mayelin">
   <meta property="og:title" content="Mayelin Empanadas">
   <meta property="og:description" content="El mejor sabor y mejor calidad. Hechas con amor, para ti.">
   <meta property="og:image" content="https://mayelin-empanadas.vercel.app/assets/logo.webp">
@@ -34,6 +37,8 @@
     <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="i-note" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></symbol>
     <symbol id="i-empanada" viewBox="0 0 64 40"><path d="M4 34a28 28 0 0 1 56 0z"/><path d="M9 33c1-2 3-2 4 0s3 2 4 0 3-2 4 0 3 2 4 0 3-2 4 0 3 2 4 0 3-2 4 0 3 2 4 0 3-2 4 0 3 2 4 0"/></symbol>
   </svg>
@@ -45,7 +50,10 @@
         <h1>Mayelin Empanadas</h1>
         <p>Empanadas caseras a domicilio en La Romana</p>
       </div>
-      <p id="status" class="status" role="status"></p>
+      <div class="masthead-actions">
+        <p id="status" class="status" role="status"></p>
+        <button id="install" class="install-btn" type="button" hidden><svg class="ico"><use href="#i-download"/></svg>Instalar app</button>
+      </div>
     </div>
     <ul class="perks">
       <li class="perk perk-delivery">
@@ -213,6 +221,17 @@
       </footer>
     </section>
   </div>
+
+  <!-- En iPhone no hay botón de instalar automático: se explica cómo agregarla a la pantalla de inicio -->
+  <dialog id="ios-install" class="ios-install" aria-labelledby="ios-title">
+    <h2 id="ios-title">Instala la app en tu iPhone</h2>
+    <ol>
+      <li>Toca el botón <strong>Compartir</strong> <svg class="ico"><use href="#i-share"/></svg> abajo en Safari.</li>
+      <li>Elige <strong>Agregar a pantalla de inicio</strong>.</li>
+      <li>Toca <strong>Agregar</strong>.</li>
+    </ol>
+    <form method="dialog"><button class="btn btn-primary btn-block">Entendido</button></form>
+  </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="config.js"></script>

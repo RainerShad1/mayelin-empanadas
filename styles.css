@@ -653,3 +653,44 @@ form .invalid { border-color: var(--red) !important; }
 .block-sum { background: var(--cream-2); border-color: transparent; }
 .block-sum .totals { margin: 6px 0 2px; }
 #step-cart > .warning { margin-top: 10px; }
+
+/* ---------- Estado y botón de instalar la app ---------- */
+.masthead-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.masthead-actions .status { justify-self: auto; }
+.install-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 3px 12px 3px 10px;
+  border: 1.5px solid var(--gold);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gold);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.install-btn::before { content: ""; position: absolute; inset: -6px; } /* área táctil de 44 px */
+.install-btn:hover { background: rgba(242, 181, 68, 0.14); }
+.install-btn .ico { width: 16px; height: 16px; stroke-width: 2.4; }
+@media (min-width: 760px) {
+  .masthead-actions { justify-content: flex-end; }
+  .install-btn { min-height: 36px; font-size: 0.95rem; }
+}
+
+.ios-install {
+  width: min(380px, calc(100% - 32px));
+  padding: 20px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--cream);
+  color: var(--brown);
+  box-shadow: var(--shadow);
+}
+.ios-install::backdrop { background: rgba(36, 16, 8, 0.55); }
+.ios-install h2 { margin: 0 0 8px; font-size: 1.15rem; font-weight: 900; }
+.ios-install ol { margin: 0; padding-left: 20px; }
+.ios-install li { margin: 8px 0; }
+.ios-install .ico { width: 18px; height: 18px; vertical-align: -3px; color: #0a7aff; }

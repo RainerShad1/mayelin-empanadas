@@ -26,6 +26,22 @@
   let seenIds = new Set();
   let firstLoad = true;
 
+  // Pedidos que ya sonaron. Se guarda en el navegador para que no vuelvan a sonar al recargar el panel.
+  const CONFIRMED = ["confirmed", "preparing", "on_the_way", "delivered"];
+  const ANNOUNCED_KEY = "mayelin-panel-announced";
+  let announcedSaved = false;
+  const announced = new Set((() => {
+    try {
+      const list = JSON.parse(localStorage.getItem(ANNOUNCED_KEY));
+      announcedSaved = Array.isArray(list);
+      return announcedSaved ? list : [];
+    } catch { return []; }
+  })());
+  function saveAnnounced() {
+    try { localStorage.setItem(ANNOUNCED_KEY, JSON.stringify([...announced].slice(-300))); } catch { /* sin almacenamiento */ }
+    announcedSaved = true;
+  }
+
   // ---------- Utilidades ----------
   const money = (n) => C.currency + Math.round(Number(n)).toLocaleString("es");
   const esc = (s) =>
@@ -146,13 +162,27 @@
       .limit(300);
     if (error) return toast("No se pudieron cargar los pedidos.", true);
 
+    // Pedido nuevo: solo un aviso en pantalla, sin sonido (todavía falta que el cliente lo confirme)
     const fresh = data.filter((o) => o.status === "pending" && !seenIds.has(o.id));
     if (!firstLoad && fresh.length) {
-      ding();
-      toast(fresh.length === 1 ? `Nuevo pedido ${fresh[0].code}` : `${fresh.length} pedidos nuevos`);
+      toast(fresh.length === 1
+        ? `Nuevo pedido ${fresh[0].code}: esperando que el cliente lo confirme.`
+        : `${fresh.length} pedidos nuevos esperando confirmación.`);
     }
-    const highlight = firstLoad ? new Set() : new Set(fresh.map((o) => o.id));
     data.forEach((o) => seenIds.add(o.id));
+
+    // El sonido suena una sola vez por pedido: cuando el cliente lo confirma por WhatsApp
+    const confirmedNow = data.filter((o) => CONFIRMED.includes(o.status) && !announced.has(o.id));
+    confirmedNow.forEach((o) => announced.add(o.id));
+    if (confirmedNow.length) saveAnnounced();
+    const ring = firstLoad && !announcedSaved ? [] : confirmedNow;
+    if (ring.length) {
+      ding();
+      toast(ring.length === 1
+        ? `¡${ring[0].code} confirmado por el cliente! ${ring[0].status === "preparing" ? "Ya está en preparación." : "Revisa la transferencia."}`
+        : `${ring.length} pedidos confirmados por los clientes.`);
+    }
+    const highlight = new Set([...(firstLoad ? [] : fresh), ...ring].map((o) => o.id));
     firstLoad = false;
     orders = data;
     renderOrders(highlight);
@@ -252,6 +282,9 @@
     if (status === "preparing" && transferPending(o) &&
         !confirm(`La transferencia del pedido #${o.code} no está confirmada. ¿Preparar de todos modos?`)) return;
     btn.disabled = true;
+    // Un cambio hecho desde el panel no hace sonar la alerta
+    announced.add(o.id);
+    saveAnnounced();
     const { data, error } = await db.from("orders").update({ status }).eq("id", o.id).select().single();
     if (error) {
       btn.disabled = false;
@@ -259,23 +292,30 @@
     }
     Object.assign(o, data);
     renderOrders();
-    toast(`#${o.code}: ${STATUS[status]}. Toca "Avisar" para enviarle el mensaje al cliente.`);
+    toast(o.wa_id
+      ? `#${o.code}: ${STATUS[status]}. El bot le avisa al cliente.`
+      : `#${o.code}: ${STATUS[status]}. Toca "Avisar" para enviarle el mensaje al cliente.`);
   });
 
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-pay]");
     if (!btn) return;
     const o = orders.find((x) => x.id === btn.dataset.pay);
-    if (!confirm(`¿Confirmas que recibiste ${money(o.total)} del pedido #${o.code}?`)) return;
+    // Si el cliente ya confirmó el pedido, recibir el pago lo pasa a preparación (un solo aviso al cliente)
+    const toPreparing = o.status === "confirmed";
+    const question = `¿Confirmas que recibiste ${money(o.total)} del pedido #${o.code}?` +
+      (toPreparing ? " El pedido pasará a Preparando." : "");
+    if (!confirm(question)) return;
     btn.disabled = true;
-    const { data, error } = await db.from("orders").update({ payment_confirmed: true }).eq("id", o.id).select().single();
+    const patch = toPreparing ? { payment_confirmed: true, status: "preparing" } : { payment_confirmed: true };
+    const { data, error } = await db.from("orders").update(patch).eq("id", o.id).select().single();
     if (error) {
       btn.disabled = false;
       return toast("No se pudo confirmar la transferencia.", true);
     }
     Object.assign(o, data);
     renderOrders();
-    toast(`#${o.code}: transferencia confirmada.`);
+    toast(`#${o.code}: transferencia confirmada${toPreparing ? ", en preparación" : ""}.`);
   });
 
   // Tiempo real: cualquier cambio en pedidos recarga la lista

@@ -105,6 +105,14 @@
     return same ? `${a.slice(0, -6)} a ${b}` : `${a} a ${b}`;
   };
 
+  // Feriado de una fecha (o undefined), según config.js
+  const holidayOn = (date) => {
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    return (C.holidays || {})[key];
+  };
+  // Horario de una fecha: null si ese día no se trabaja
+  const hoursOn = (date) => (holidayOn(date) ? null : C.hours[date.getDay()]);
+
   function openStatus(now = new Date()) {
     if (settings && !settings.accepting_orders) {
       return { open: false, text: "Pausado", note: "En este momento no estamos recibiendo pedidos. Puedes ver el menú y volver más tarde." };
@@ -112,16 +120,18 @@
     if (C.alwaysOpenForTesting) return { open: true, text: "Abierto ahora" };
     const day = now.getDay();
     const cur = now.getHours() * 60 + now.getMinutes();
-    const today = C.hours[day];
+    const today = hoursOn(now);
     if (today && cur >= toMin(today[0]) && cur < toMin(today[1])) {
       return { open: true, text: `Abierto hasta las ${fmtTime(today[1])}` };
     }
+    const holiday = holidayOn(now);
     for (let i = 0; i < 7; i++) {
       const d = (day + i) % 7;
-      const h = C.hours[d];
+      const h = hoursOn(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i));
       if (!h || (i === 0 && cur >= toMin(h[0]))) continue;
       const when = i === 0 ? "hoy" : i === 1 ? "mañana" : `el ${DAYS[d]}`;
-      return { open: false, text: "Cerrado", note: `Abrimos ${when} a las ${fmtTime(h[0])}. Puedes ir viendo el menú.` };
+      const why = holiday ? `Hoy no trabajamos por ser feriado (${holiday}). ` : "";
+      return { open: false, text: "Cerrado", note: `${why}Abrimos ${when} a las ${fmtTime(h[0])} Puedes ir viendo el menú.` };
     }
     return { open: false, text: "Cerrado", note: "Por ahora no tenemos horario de atención." };
   }
@@ -150,8 +160,8 @@
       offer.textContent = C.deliveryNote || "";
       $("#fact-min").textContent = settings.min_order_units ? `${settings.min_order_units} empanadas` : "Sin mínimo";
     }
-    const today = C.hours[new Date().getDay()];
-    $("#fact-hours").textContent = today ? fmtRangeShort(today) : "Cerrado";
+    const today = hoursOn(new Date());
+    $("#fact-hours").textContent = today ? fmtRangeShort(today) : holidayOn(new Date()) ? "Feriado: cerrado" : "Cerrado";
 
     $("#owner").textContent = C.owner;
     const contact = C.contactWhatsapp || C.whatsapp;
@@ -163,6 +173,7 @@
     const rows = same
       ? [["Todos los días", C.hours[1]]]
       : order.map((d) => [DAYS[d][0].toUpperCase() + DAYS[d].slice(1), C.hours[d]]);
+    if (C.holidays) rows.push(["Días feriados", null]);
     $("#hours-list").innerHTML = rows
       .map(([label, h]) => `<dt>${label}</dt><dd>${h ? fmtRange(h) : "Cerrado"}</dd>`).join("");
   }

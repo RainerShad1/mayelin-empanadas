@@ -36,13 +36,31 @@ window.CONFIG = {
 
   // Horario por día (0 = domingo … 6 = sábado). null = cerrado ese día.
   hours: {
-    0: ["18:00", "22:00"],
-    1: ["18:00", "22:00"],
-    2: ["18:00", "22:00"],
-    3: ["18:00", "22:00"],
-    4: ["18:00", "22:00"],
-    5: ["18:00", "22:00"],
-    6: ["18:00", "22:00"],
+    0: ["17:00", "22:30"],
+    1: ["17:00", "22:30"],
+    2: ["17:00", "22:30"],
+    3: ["17:00", "22:30"],
+    4: ["17:00", "22:30"],
+    5: ["17:00", "22:30"],
+    6: ["17:00", "22:30"],
+  },
+  // Días feriados: cerrado todo el día. Fecha "AAAA-MM-DD" del día que se descansa
+  // (si el Gobierno mueve un feriado a lunes, pon la fecha del lunes).
+  holidays: {
+    "2026-11-09": "Día de la Constitución",
+    "2026-12-25": "Navidad",
+    "2027-01-01": "Año Nuevo",
+    "2027-01-04": "Día de Reyes",
+    "2027-01-21": "Día de la Altagracia",
+    "2027-01-25": "Día de Duarte",
+    "2027-02-27": "Día de la Independencia",
+    "2027-03-26": "Viernes Santo",
+    "2027-05-01": "Día del Trabajo",
+    "2027-05-27": "Corpus Christi",
+    "2027-08-16": "Día de la Restauración",
+    "2027-09-24": "Día de las Mercedes",
+    "2027-11-06": "Día de la Constitución",
+    "2027-12-25": "Navidad",
   },
   // PRUEBAS: true = la página aparece siempre abierta. Ponlo en false al abrir al público.
   alwaysOpenForTesting: true,

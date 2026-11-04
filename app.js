@@ -167,12 +167,18 @@
     const contact = C.contactWhatsapp || C.whatsapp;
     $("#contact").innerHTML = contact ? ` al <a href="https://wa.me/${esc(contact)}">+${esc(contact)}</a>` : "";
 
-    // Si todos los días tienen el mismo horario, se dice una sola vez
+    // Los días seguidos con el mismo horario se juntan: "Lunes a sábado", "Domingo"
     const order = [1, 2, 3, 4, 5, 6, 0];
-    const same = order.every((d) => String(C.hours[d]) === String(C.hours[1]));
-    const rows = same
+    const groups = [];
+    for (const d of order) {
+      const last = groups[groups.length - 1];
+      if (last && String(C.hours[d]) === String(C.hours[last.from])) last.to = d;
+      else groups.push({ from: d, to: d });
+    }
+    const cap = (s) => s[0].toUpperCase() + s.slice(1);
+    const rows = groups.length === 1
       ? [["Todos los días", C.hours[1]]]
-      : order.map((d) => [DAYS[d][0].toUpperCase() + DAYS[d].slice(1), C.hours[d]]);
+      : groups.map((g) => [g.from === g.to ? cap(DAYS[g.from]) : `${cap(DAYS[g.from])} a ${DAYS[g.to]}`, C.hours[g.from]]);
     if (C.holidays) rows.push(["Días feriados", null]);
     $("#hours-list").innerHTML = rows
       .map(([label, h]) => `<dt>${label}</dt><dd>${h ? fmtRange(h) : "Cerrado"}</dd>`).join("");

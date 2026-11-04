@@ -36,7 +36,7 @@ window.CONFIG = {
 
   // Horario por día (0 = domingo … 6 = sábado). null = cerrado ese día.
   hours: {
-    0: ["17:00", "22:30"],
+    0: null,
     1: ["17:00", "22:30"],
     2: ["17:00", "22:30"],
     3: ["17:00", "22:30"],

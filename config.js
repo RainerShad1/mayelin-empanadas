@@ -17,7 +17,7 @@ window.CONFIG = {
 
   // Número de WhatsApp que recibe los pedidos (el del bot): solo dígitos, con código de país.
   // Ejemplo: "18095551234" (sin +, espacios ni guiones).
-  whatsapp: "18298531204",
+  whatsapp: "18294569607",
   // Número que atiende una persona: se muestra en las páginas legales para
   // reclamos y pedidos de borrado, porque el número del bot no lo lee nadie.
   contactWhatsapp: "18097527776",
